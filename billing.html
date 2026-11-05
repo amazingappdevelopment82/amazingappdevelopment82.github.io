@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Bahadur Billing</title>
+  <meta name="description" content="Bahadur Billing - Professional Offline Android POS & Inventory Management System">
+  <meta name="theme-color" content="#1e3a8a">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Ad Networks: MagSrv Banner Ads Only -->
+  <script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script>
+
+  <!-- React 18 & Babel Standalone for direct single-file execution -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    @media print {
+      body * { visibility: hidden; }
+      #printable-receipt, #printable-receipt * { visibility: visible; }
+      #printable-receipt { position: absolute; left: 0; top: 0; width: 100%; max-width: 80mm; margin: 0 auto; padding: 10px; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 antialiased select-none overflow-x-hidden">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, useRef } = React;
+
+    const LOGO_URL = "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi5ubEb2B5ITISSH9YtNVFHg1zukSe5Q9_GYvhN5VY8SjVTzWrLzLor5XwHxFSYZapa5_EK6ZfEL7Fsr9qOJo3z-mXLBh_6SyeovzrILp-tthBwixE-3I4jZ-y7dpiQVU-YAa3qVnrZS7iApU3dOHpenU79qdRXLxgsz0QF5-flcmplQm14EEL0x5E_b0k/s1254/file_00000000fb1c82109aaaefbaf0de21a6.png";
+    const BANNER_URL = "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiH4U4Sn0yfLYrniznoQXdFrqg19CBsI1PtKtFk3dq0gsgxwBt8cfoDEp1aNkBcumedxRmQiBH4KJlib4lY2W2z_NFeFGyRzVaA_SeHGFfPtSfN8uxYlATyrei7FjBWnHhNPP_fNK2rXWoHua65GG1hFkOI_7aH8B77Smjfg3M4JHY9tO6-3St92pYDJf0/s1983/file_0000000029c881f5b7faf3684138215b.png";
+    const APP_NAME = "Bahadur Billing";
+    const SUPPORT_EMAIL = "bahadurmedia.in@gmail.com";
+    const OFFICIAL_WEBSITE = "https://amazingappdevelopment82.github.io/BAHADUR-MEDIA-/";
+    const OFFICIAL_WEBSITE_TITLE = "Bahadur Billing";
+    const APP_DOWNLOAD_URL = "https://www.appcreator24.com/app4237014-oymfnc";
+    const COPYRIGHT = "@Bahadur Billing all Right";
+
+    const THEMES = {
+      ocean: { name: "Ocean Blue", bg: "from-blue-950 to-slate-950", accent: "bg-blue-600", text: "text-blue-400", border: "border-blue-500" },
+      purple: { name: "Royal Purple", bg: "from-purple-950 to-slate-950", accent: "bg-purple-600", text: "text-purple-400", border: "border-purple-500" },
+      emerald: { name: "Emerald Green", bg: "from-emerald-950 to-slate-950", accent: "bg-emerald-600", text: "text-emerald-400", border: "border-emerald-500" },
+      orange: { name: "Sunset Orange", bg: "from-orange-950 to-slate-950", accent: "bg-orange-600", text: "text-orange-400", border: "border-orange-500" },
+      pink: { name: "Rose Pink", bg: "from-pink-950 to-slate-950", accent: "bg-pink-600", text: "text-pink-400", border: "border-pink-500" },
+      midnight: { name: "Midnight Black", bg: "from-zinc-950 to-black", accent: "bg-zinc-700", text: "text-zinc-300", border: "border-zinc-600" }
+    };
+
+    const INITIAL_PRODUCTS = [
+      { id: "1", name: "Basmati Rice Premium (5kg)", barcode: "890103001", sku: "RIC-01", category: "Groceries", price: 780, cost: 650, stock: 42, unit: "bag" },
+      { id: "2", name: "Pure Soybean Oil (5L)", barcode: "890103002", sku: "OIL-01", category: "Groceries", price: 870, cost: 790, stock: 28, unit: "can" },
+      { id: "3", name: "Fresh Dairy Milk (1 Litre)", barcode: "890103003", sku: "DAI-01", category: "Beverages", price: 95, cost: 80, stock: 15, unit: "packet" },
+      { id: "4", name: "Wireless Bluetooth Earbuds Pro", barcode: "890103005", sku: "ELE-01", category: "Electronics", price: 1850, cost: 1200, stock: 12, unit: "pcs" },
+      { id: "5", name: "Men Premium Cotton Polo Shirt", barcode: "890103007", sku: "CLO-01", category: "Clothing", price: 890, cost: 520, stock: 22, unit: "pcs" }
+    ];
+
+    const INITIAL_CUSTOMERS = [
+      { id: "c1", name: "Tanvir Ahmed", phone: "+880 1712-445566", totalPurchased: 12500, due: 1450 },
+      { id: "c2", name: "Dr. Nusrat Jahan", phone: "+880 1819-998877", totalPurchased: 24600, due: 0 },
+      { id: "c3", name: "Kazi Farhan", phone: "+880 1911-332211", totalPurchased: 8900, due: 620 }
+    ];
+
+    const INITIAL_EXPENSES = [
+      { id: "e1", category: "Shop Rent", amount: 15000, date: new Date().toISOString().split('T')[0], note: "Monthly Store Rent" },
+      { id: "e2", category: "Electricity", amount: 2400, date: new Date().toISOString().split('T')[0], note: "DESCO Commercial Bill" }
+    ];
+
+    function App() {
+      // 5 Primary Navigation Tabs: dashboard, sales, billing, customers, more
+      const [tab, setTab] = useState("dashboard");
+      const [themeKey, setThemeKey] = useState(() => localStorage.getItem("bb_theme") || "ocean");
+      const currentTheme = THEMES[themeKey] || THEMES.ocean;
+
+      // Persistence States
+      const [products, setProducts] = useState(() => {
+        try { const s = localStorage.getItem("bb_products"); return s ? JSON.parse(s) : INITIAL_PRODUCTS; } catch(e) { return INITIAL_PRODUCTS; }
+      });
+      const [customers, setCustomers] = useState(() => {
+        try { const s = localStorage.getItem("bb_customers"); return s ? JSON.parse(s) : INITIAL_CUSTOMERS; } catch(e) { return INITIAL_CUSTOMERS; }
+      });
+      const [sales, setSales] = useState(() => {
+        try { const s = localStorage.getItem("bb_sales"); return s ? JSON.parse(s) : []; } catch(e) { return []; }
+      });
+      const [expenses, setExpenses] = useState(() => {
+        try { const s = localStorage.getItem("bb_expenses"); return s ? JSON.parse(s) : INITIAL_EXPENSES; } catch(e) { return INITIAL_EXPENSES; }
+      });
+
+      // Cart & Billing State
+      const [cart, setCart] = useState([]);
+      const [cartCustomer, setCartCustomer] = useState(null);
+      const [paymentMethod, setPaymentMethod] = useState("Cash");
+      const [discount, setDiscount] = useState(0);
+      const [taxPercent, setTaxPercent] = useState(5);
+      const [tenderCash, setTenderCash] = useState(0);
+
+      // UI Modals
+      const [showMoreMenu, setShowMoreMenu] = useState(false);
+      const [activeReceipt, setActiveReceipt] = useState(null);
+      const [toast, setToast] = useState(null);
+      const [deleteConfirm, setDeleteConfirm] = useState(null);
+      const [scannerOpen, setScannerOpen] = useState(false);
+      const [searchQuery, setSearchQuery] = useState("");
+      const [adminModalOpen, setAdminModalOpen] = useState(false);
+      const [adminEmail, setAdminEmail] = useState("");
+      const [adminPassword, setAdminPassword] = useState("");
+      const [adminError, setAdminError] = useState("");
+      const [adminLoggedIn, setAdminLoggedIn] = useState(false);
+
+      // Trigger ad-provider refresh on tab transition
+      useEffect(() => {
+        try {
+          if (window.AdProvider) {
+            window.AdProvider = window.AdProvider || [];
+            window.AdProvider.push({ serve: {} });
+          }
+        } catch(e) {}
+      }, [tab, showMoreMenu]);
+
+      // Sync to LocalStorage
+      useEffect(() => { localStorage.setItem("bb_products", JSON.stringify(products)); }, [products]);
+      useEffect(() => { localStorage.setItem("bb_customers", JSON.stringify(customers)); }, [customers]);
+      useEffect(() => { localStorage.setItem("bb_sales", JSON.stringify(sales)); }, [sales]);
+      useEffect(() => { localStorage.setItem("bb_expenses", JSON.stringify(expenses)); }, [expenses]);
+      useEffect(() => { localStorage.setItem("bb_theme", themeKey); }, [themeKey]);
+
+      const showToastMsg = (msg, type = "info") => {
+        setToast({ msg, type });
+        setTimeout(() => setToast(null), 3000);
+      };
+
+      // Cart Calculations
+      const subtotal = useMemo(() => cart.reduce((sum, item) => sum + (item.price * item.qty), 0), [cart]);
+      const taxAmount = useMemo(() => Math.round((subtotal * taxPercent) / 100), [subtotal, taxPercent]);
+      const grandTotal = useMemo(() => Math.max(0, subtotal - discount + taxAmount), [subtotal, discount, taxAmount]);
+      const changeDue = useMemo(() => Math.max(0, (tenderCash || grandTotal) - grandTotal), [tenderCash, grandTotal]);
+
+      const addToCart = (product) => {
+        if (product.stock <= 0) {
+          showToastMsg(product.name + " স্টকে নেই!", "warning");
+          return;
+        }
+        setCart(prev => {
+          const ex = prev.find(i => i.id === product.id);
+          if (ex) {
+            if (ex.qty >= product.stock) {
+              showToastMsg("স্টকে এর বেশি পণ্য নেই!", "warning");
+              return prev;
+            }
+            return prev.map(i => i.id === product.id ? { ...i, qty: i.qty + 1 } : i);
+          }
+          return [...prev, { ...product, qty: 1 }];
+        });
+        showToastMsg(product.name + " কার্টে যোগ হয়েছে", "success");
+      };
+
+      const updateCartQty = (id, delta) => {
+        setCart(prev => prev.map(i => {
+          if (i.id === id) {
+            const newQty = i.qty + delta;
+            return newQty > 0 ? { ...i, qty: newQty } : null;
+          }
+          return i;
+        }).filter(Boolean));
+      };
+
+      const handleCheckout = () => {
+        if (cart.length === 0) {
+          showToastMsg("কার্ট খালি! পণ্য যোগ করুন।", "warning");
+          return;
+        }
+        const invNumber = "INV-" + (sales.length + 1001);
+        const paid = tenderCash > 0 ? Math.min(tenderCash, grandTotal) : grandTotal;
+        const due = Math.max(0, grandTotal - paid);
+
+        const newSale = {
+          invoice: invNumber,
+          date: new Date().toLocaleDateString("en-GB"),
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          subtotal,
+          discount,
+          tax: taxAmount,
+          total: grandTotal,
+          paid,
+          due,
+          method: paymentMethod,
+          customer: cartCustomer ? cartCustomer.name : "Walk-in Customer",
+          phone: cartCustomer ? cartCustomer.phone : "-",
+          items: [...cart]
+        };
+
+        // Deduct stock
+        setProducts(prev => prev.map(p => {
+          const ci = cart.find(i => i.id === p.id);
+          return ci ? { ...p, stock: Math.max(0, p.stock - ci.qty) } : p;
+        }));
+
+        // Update customer total & due
+        if (cartCustomer) {
+          setCustomers(prev => prev.map(c => {
+            if (c.id === cartCustomer.id) {
+              return {
+                ...c,
+                totalPurchased: c.totalPurchased + grandTotal,
+                due: c.due + due
+              };
+            }
+            return c;
+          }));
+        }
+
+        setSales(prev => [newSale, ...prev]);
+        setActiveReceipt(newSale);
+        setCart([]);
+        setDiscount(0);
+        setTenderCash(0);
+        setCartCustomer(null);
+        showToastMsg("বিক্রি সফলভাবে সম্পন্ন হয়েছে!", "success");
+      };
+
+      // Summary Metrics
+      const metrics = useMemo(() => {
+        const todayStr = new Date().toLocaleDateString("en-GB");
+        const todaySales = sales.filter(s => s.date === todayStr).reduce((sum, s) => sum + s.total, 0);
+        const monthSales = sales.reduce((sum, s) => sum + s.total, 0);
+        const totalProfit = sales.reduce((sum, s) => {
+          const cost = s.items.reduce((c, it) => c + ((it.cost || it.price * 0.8) * it.qty), 0);
+          return sum + (s.total - cost);
+        }, 0);
+        const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+        const lowStock = products.filter(p => p.stock <= 5).length;
+        const totalDues = customers.reduce((sum, c) => sum + (c.due || 0), 0);
+        return { todaySales, monthSales, totalProfit, totalExpenses, lowStock, totalDues };
+      }, [sales, expenses, products, customers]);
+
+      return (
+        <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center">
+          {/* Main App Container - Exact Phone Dimensions on Mobile */}
+          <div className="w-full max-w-md h-[100dvh] flex flex-col bg-slate-900 border-x border-slate-800 shadow-2xl relative overflow-hidden">
+            
+            {/* 1. TOP HEADER */}
+            <header className="p-3 bg-slate-950/95 backdrop-blur-md border-b border-slate-800 flex items-center justify-between shrink-0 sticky top-0 z-20">
+              <div className="flex items-center gap-2.5">
+                <img src={LOGO_URL} alt="Logo" className="w-8 h-8 rounded-xl object-contain bg-white/10 p-1 border border-white/20 shadow-md" />
+                <div>
+                  <h1 className="font-extrabold text-sm tracking-tight text-white flex items-center gap-1.5">
+                    <span>{APP_NAME}</span>
+                    <span className="text-[9px] bg-blue-600 text-white font-bold px-1.5 py-0.2 rounded-full uppercase">POS</span>
+                  </h1>
+                  <span className="text-[10px] text-slate-400">Offline Retail POS</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <button 
+                  onClick={() => setScannerOpen(true)}
+                  className="p-2 rounded-xl bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600/30 active:scale-95 transition"
+                  title="Open Camera Scanner"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+                </button>
+              </div>
+            </header>
+
+            {/* 2. SCROLLABLE VIEWPORT CONTENT */}
+            <main className="flex-1 p-3 overflow-y-auto space-y-4 pb-20 no-scrollbar">
+
+              {/* VIEW: DASHBOARD */}
+              {tab === "dashboard" && (
+                <div className="space-y-4">
+                  {/* Banner Flush with body - No side gaps */}
+                  <div className="-mx-3 overflow-hidden shadow-xl border-y border-slate-800 bg-slate-950">
+                    <img src={BANNER_URL} alt="Banner" className="w-full h-auto object-cover block" />
+                  </div>
+
+                  {/* App Download / Install Action Linking to AppCreator24 */}
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-4 gap-2">
+                      <a 
+                        href={APP_DOWNLOAD_URL}
+                        target="_system" 
+                        rel="noopener noreferrer" 
+                        className="col-span-3 block p-3 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 rounded-2xl border border-emerald-400/40 text-white shadow-xl active:scale-98 transition"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="text-xs font-extrabold text-white flex items-center gap-1.5">
+                              <span>📲 অ্যাপ ডাউনলোড করুন</span>
+                            </div>
+                            <p className="text-[10px] text-emerald-100 truncate">AppCreator24 অফলাইন APK</p>
+                          </div>
+                          <span className="px-2.5 py-1 rounded-xl bg-white text-emerald-800 font-extrabold text-[11px] shrink-0 shadow">ইনস্টল</span>
+                        </div>
+                      </a>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (navigator.clipboard) {
+                            navigator.clipboard.writeText(APP_DOWNLOAD_URL);
+                          }
+                          showToastMsg("ডাউনলোড লিংক কপি করা হয়েছে!", "success");
+                        }}
+                        className="p-2 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-[11px] flex flex-col items-center justify-center active:scale-95 transition"
+                        title="লিংক কপি করুন"
+                      >
+                        <span>📋</span>
+                        <span className="text-[9px]">কপি লিংক</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Main Home Page Top Ad Banners (Zone 6068949 + 1st Button Page Zone 6022710) */}
+                  <div className="no-print my-2 overflow-hidden rounded-2xl bg-slate-900/60 border border-slate-800 text-center min-h-[50px] flex items-center justify-center">
+                    <ins className="eas6a97888e2" data-zoneid="6068949" style={{ display: 'inline-block' }}></ins>
+                  </div>
+                  <div className="no-print my-2 overflow-hidden rounded-2xl bg-slate-900/60 border border-slate-800 text-center min-h-[50px] flex items-center justify-center">
+                    <ins className="eas6a97888e2" data-zoneid="6022710" style={{ display: 'inline-block' }}></ins>
+                  </div>
+
+                  {/* Sales Metrics Grid */}
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="p-3 bg-slate-800/80 rounded-2xl border border-slate-700/80 shadow-md">
+                      <span className="text-[10px] text-slate-400 block">Total Sales Today</span>
+                      <span className="text-lg font-extrabold text-emerald-400 font-mono">৳{metrics.todaySales}</span>
+                    </div>
+                    <div className="p-3 bg-slate-800/80 rounded-2xl border border-slate-700/80 shadow-md">
+                      <span className="text-[10px] text-slate-400 block">Total Sales This Month</span>
+                      <span className="text-lg font-extrabold text-blue-400 font-mono">৳{metrics.monthSales}</span>
+                    </div>
+                    <div className="p-3 bg-slate-800/80 rounded-2xl border border-slate-700/80 shadow-md">
+                      <span className="text-[10px] text-slate-400 block">Total Profit</span>
+                      <span className="text-lg font-extrabold text-amber-400 font-mono">৳{metrics.totalProfit}</span>
+                    </div>
+                    <div className="p-3 bg-slate-800/80 rounded-2xl border border-slate-700/80 shadow-md">
+                      <span className="text-[10px] text-slate-400 block">Pending Payments (Due)</span>
+                      <span className="text-lg font-extrabold text-rose-400 font-mono">৳{metrics.totalDues}</span>
+                    </div>
+                  </div>
+
+                  {/* Main Home Page Middle Ad Banner (Zone 6068947) */}
+                  <div className="no-print my-2 overflow-hidden rounded-2xl bg-slate-900/60 border border-slate-800 text-center min-h-[50px] flex items-center justify-center">
+                    <ins className="eas6a97888e2" data-zoneid="6068947" style={{ display: 'inline-block' }}></ins>
+                  </div>
+
+                  {/* Quick POS Products Grid */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Quick Add to Cart:</span>
+                      <span className="text-[10px] text-slate-400">{products.length} Products</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {products.map(p => (
+                        <button 
+                          key={p.id} 
+                          onClick={() => addToCart(p)}
+                          className="p-3 rounded-2xl bg-slate-800/60 border border-slate-700/60 hover:border-blue-500/80 text-left transition active:scale-95 group shadow-sm"
+                        >
+                          <div className="text-xs font-bold text-white truncate group-hover:text-blue-300">{p.name}</div>
+                          <div className="flex justify-between items-center mt-2">
+                            <span className="text-xs font-bold font-mono text-emerald-400">৳{p.price}</span>
+                            <span className="text-[10px] text-slate-400">Stock: {p.stock}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Main Home Page Bottom Ad Banner (Zone 6035588) */}
+                  <div className="no-print my-2 overflow-hidden rounded-2xl bg-slate-900/60 border border-slate-800 text-center min-h-[50px] flex items-center justify-center">
+                    <ins className="eas6a97888e2" data-zoneid="6035588" style={{ display: 'inline-block' }}></ins>
+                  </div>
+                </div>
+              )}
+
+              {/* VIEW: SALES HISTORY (2nd Button Page) */}
+              {tab === "sales" && (
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-sm font-bold text-white">Sales & Invoice History</h2>
+                    <span className="text-xs font-mono text-blue-400">{sales.length} Invoices</span>
+                  </div>
+
+                  {/* 2nd Button Page Ad (Zone 6045742) */}
+                  <div className="no-print my-2 overflow-hidden rounded-2xl bg-slate-900/60 border border-slate-800 text-center min-h-[50px] flex items-center justify-center">
+                    <ins className="eas6a97888e2" data-zoneid="6045742" style={{ display: 'inline-block' }}></ins>
+                  </div>
+
+                  {sales.length === 0 ? (
+                    <div className="text-center py-12 text-slate-500 text-xs bg-slate-800/40 rounded-3xl border border-slate-800">
+                      কোনো বিক্রি এখনও হয়নি। Cashier ট্যাব থেকে বিক্রি শুরু করুন।
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {sales.map(s => (
+                        <div key={s.invoice} className="p-3.5 bg-slate-800/80 rounded-2xl border border-slate-700 flex justify-between items-center text-xs">
+                          <div>
+                            <div className="font-bold text-white font-mono">{s.invoice}</div>
+                            <div className="text-[10px] text-slate-400">{s.customer} · {s.date} {s.time}</div>
+                            <div className="text-[10px] text-blue-400 mt-0.5">{s.items.length} items · {s.method}</div>
+                          </div>
+                          <div className="text-right space-y-1">
+                            <div className="text-sm font-bold font-mono text-emerald-400">৳{s.total}</div>
+                            <button 
+                              onClick={() => setActiveReceipt(s)}
+                              className="px-2.5 py-1 rounded-lg bg-blue-600/30 text-blue-300 text-[10px] font-bold hover:bg-blue-600/50"
+                            >
+                              রসিদ প্রিন্ট
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* VIEW: CASHIER BILLING (3rd Button Page) */}
+              {tab === "billing" && (
+                <div className="space-y-3">
+                  {/* 3rd Button Page Ad (Zone 6030678 with eas6a97888e6) */}
+                  <div className="no-print my-2 overflow-hidden rounded-2xl bg-slate-900/60 border border-slate-800 text-center min-h-[50px] flex items-center justify-center">
+                    <ins className="eas6a97888e6" data-zoneid="6030678" style={{ display: 'inline-block' }}></ins>
+                  </div>
+
+                  {/* Cart List */}
+                  <div className="p-3.5 bg-slate-800/80 rounded-2xl border border-slate-700 space-y-3">
+                    <div className="flex justify-between items-center border-b border-slate-700 pb-2">
+                      <span className="text-xs font-bold text-white">Current Cart ({cart.length} items)</span>
+                      {cart.length > 0 && (
+                        <button onClick={() => setCart([])} className="text-[11px] text-rose-400 font-bold hover:underline">
+                          সব মুছুন
+                        </button>
+                      )}
+                    </div>
+
+                    {cart.length === 0 ? (
+                      <div className="text-center py-6 text-xs text-slate-500">
+                        কার্ট খালি! ড্যাশবোর্ড থেকে পণ্য ট্যাপ করে কার্টে যোগ করুন।
+                      </div>
+                    ) : (
+                      <div className="space-y-2 max-h-56 overflow-y-auto no-scrollbar">
+                        {cart.map(item => (
+                          <div key={item.id} className="p-2.5 bg-slate-900/90 rounded-xl border border-slate-700/60 flex items-center justify-between text-xs">
+                            <div className="min-w-0 pr-2">
+                              <div className="font-bold text-white truncate">{item.name}</div>
+                              <div className="text-[10px] text-slate-400 font-mono">৳{item.price} each</div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center bg-slate-800 rounded-lg border border-slate-700">
+                                <button onClick={() => updateCartQty(item.id, -1)} className="px-2 py-0.5 text-slate-400 hover:text-white">-</button>
+                                <span className="px-2 text-xs font-bold text-white font-mono">{item.qty}</span>
+                                <button onClick={() => updateCartQty(item.id, 1)} className="px-2 py-0.5 text-slate-400 hover:text-white">+</button>
+                              </div>
+                              <span className="font-bold font-mono text-emerald-400 w-16 text-right">৳{item.qty * item.price}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Customer Select */}
+                  <div className="p-3 bg-slate-800/60 rounded-2xl border border-slate-700/60 flex items-center justify-between text-xs">
+                    <div>
+                      <span className="text-[10px] text-slate-400 block">গ্রাহক নির্বাচন:</span>
+                      <span className="font-bold text-white">{cartCustomer ? cartCustomer.name : "Walk-in Customer"}</span>
+                    </div>
+                    <select 
+                      onChange={(e) => {
+                        const c = customers.find(x => x.id === e.target.value);
+                        setCartCustomer(c || null);
+                      }}
+                      className="bg-slate-900 border border-slate-700 text-xs rounded-xl p-1.5 text-white"
+                    >
+                      <option value="">Walk-in Customer</option>
+                      {customers.map(c => <option key={c.id} value={c.id}>{c.name} ({c.phone})</option>)}
+                    </select>
+                  </div>
+
+                  {/* Financial Breakdown & Checkout */}
+                  <div className="p-3.5 bg-slate-800/80 rounded-2xl border border-slate-700 space-y-2 text-xs">
+                    <div className="flex justify-between text-slate-400">
+                      <span>Subtotal:</span>
+                      <span className="font-mono text-white">৳{subtotal}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-slate-400">
+                      <span>Discount (৳):</span>
+                      <input 
+                        type="number" 
+                        value={discount} 
+                        onChange={e => setDiscount(Math.max(0, Number(e.target.value)))} 
+                        className="w-20 bg-slate-900 border border-slate-700 text-right px-2 py-1 rounded-lg text-white font-mono text-xs"
+                      />
+                    </div>
+                    <div className="flex justify-between items-center text-slate-400">
+                      <span>VAT / Tax ({taxPercent}%):</span>
+                      <span className="font-mono text-white">৳{taxAmount}</span>
+                    </div>
+                    <div className="border-t border-slate-700 pt-2 flex justify-between items-center text-sm font-extrabold text-white">
+                      <span>Grand Total:</span>
+                      <span className="font-mono text-emerald-400 text-base">৳{grandTotal}</span>
+                    </div>
+                    <div className="flex justify-between items-center pt-1 text-slate-400">
+                      <span>Payment Method:</span>
+                      <select 
+                        value={paymentMethod} 
+                        onChange={e => setPaymentMethod(e.target.value)}
+                        className="bg-slate-900 border border-slate-700 text-xs rounded-xl p-1 text-white"
+                      >
+                        <option value="Cash">Cash</option>
+                        <option value="Card">Card</option>
+                        <option value="Mobile Banking">bKash / Nagad</option>
+                        <option value="Bank Transfer">Bank</option>
+                      </select>
+                    </div>
+
+                    <button
+                      onClick={handleCheckout}
+                      disabled={cart.length === 0}
+                      className="w-full mt-2 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 font-extrabold text-xs text-white shadow-lg shadow-emerald-600/30 active:scale-95 disabled:opacity-50 transition"
+                    >
+                      Complete Sale & Generate Receipt
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* VIEW: ADDRESS BOOK / CUSTOMERS (4th Button Page) */}
+              {tab === "customers" && (
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-sm font-bold text-white">Customers & Ledger</h2>
+                    <span className="text-xs text-slate-400">{customers.length} registered</span>
+                  </div>
+
+                  {/* 4th Button Page Ad (Zone 6031130) */}
+                  <div className="no-print my-2 overflow-hidden rounded-2xl bg-slate-900/60 border border-slate-800 text-center min-h-[50px] flex items-center justify-center">
+                    <ins className="eas6a97888e2" data-zoneid="6031130" style={{ display: 'inline-block' }}></ins>
+                  </div>
+
+                  <div className="space-y-2">
+                    {customers.map(c => (
+                      <div key={c.id} className="p-3.5 bg-slate-800/80 rounded-2xl border border-slate-700 flex justify-between items-center text-xs">
+                        <div>
+                          <div className="font-bold text-white">{c.name}</div>
+                          <div className="text-[10px] text-slate-400">{c.phone}</div>
+                          <div className="text-[10px] text-blue-400">Total: ৳{c.totalPurchased}</div>
+                        </div>
+                        <div className="text-right space-y-1">
+                          <div className={"font-bold font-mono text-sm " + (c.due > 0 ? "text-rose-400" : "text-emerald-400")}>
+                            Due: ৳{c.due}
+                          </div>
+                          <button
+                            onClick={() => setDeleteConfirm({
+                              title: "কাস্টমার মুছে ফেলা",
+                              msg: c.name + " কে কি তালিকা থেকে মুছে ফেলবেন?",
+                              onConfirm: () => {
+                                setCustomers(prev => prev.filter(x => x.id !== c.id));
+                                setDeleteConfirm(null);
+                                showToastMsg("কাস্টমার মুছে ফেলা হয়েছে", "info");
+                              }
+                            })}
+                            className="text-[10px] text-rose-400 hover:underline block ml-auto"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* VIEW: PRODUCTS CATALOG */}
+              {tab === "products" && (
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-sm font-bold text-white">Products Catalog</h2>
+                    <span className="text-xs text-slate-400">{products.length} Products</span>
+                  </div>
+                  <div className="space-y-2">
+                    {products.map(p => (
+                      <div key={p.id} className="p-3.5 bg-slate-800/80 rounded-2xl border border-slate-700 flex justify-between items-center text-xs">
+                        <div>
+                          <div className="font-bold text-white">{p.name}</div>
+                          <div className="text-[10px] text-slate-400">Barcode: {p.barcode} · Stock: {p.stock} {p.unit}</div>
+                        </div>
+                        <div className="text-right space-y-1">
+                          <div className="font-bold font-mono text-emerald-400 text-sm">৳{p.price}</div>
+                          <button
+                            onClick={() => setDeleteConfirm({
+                              title: "পণ্য মুছে ফেলা",
+                              msg: p.name + " কে ইনভেন্টরি থেকে মুছবেন?",
+                              onConfirm: () => {
+                                setProducts(prev => prev.filter(x => x.id !== p.id));
+                                setDeleteConfirm(null);
+                                showToastMsg("পণ্য মুছে ফেলা হয়েছে", "info");
+                              }
+                            })}
+                            className="text-[10px] text-rose-400 hover:underline block ml-auto"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* VIEW: INVENTORY */}
+              {tab === "inventory" && (
+                <div className="space-y-3">
+                  <h2 className="text-sm font-bold text-white">Inventory & Stock Adjustment</h2>
+                  <div className="space-y-2">
+                    {products.map(p => (
+                      <div key={p.id} className="p-3 bg-slate-800/80 rounded-2xl border border-slate-700 flex justify-between items-center text-xs">
+                        <div>
+                          <div className="font-bold text-white">{p.name}</div>
+                          <div className="text-[10px] text-slate-400">Current Stock: <span className="font-bold text-amber-400">{p.stock}</span></div>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <button 
+                            onClick={() => {
+                              setProducts(prev => prev.map(x => x.id === p.id ? { ...x, stock: Math.max(0, x.stock - 1) } : x));
+                              showToastMsg("স্টক কমানো হয়েছে", "info");
+                            }}
+                            className="w-7 h-7 rounded-lg bg-rose-600/30 text-rose-300 font-bold"
+                          >
+                            -
+                          </button>
+                          <button 
+                            onClick={() => {
+                              setProducts(prev => prev.map(x => x.id === p.id ? { ...x, stock: x.stock + 1 } : x));
+                              showToastMsg("স্টক বাড়ানো হয়েছে", "success");
+                            }}
+                            className="w-7 h-7 rounded-lg bg-emerald-600/30 text-emerald-300 font-bold"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* VIEW: EXPENSES */}
+              {tab === "expenses" && (
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-sm font-bold text-white">Expenses Tracker</h2>
+                    <span className="text-xs font-mono text-rose-400">Total: ৳{metrics.totalExpenses}</span>
+                  </div>
+                  <div className="space-y-2">
+                    {expenses.map(e => (
+                      <div key={e.id} className="p-3 bg-slate-800/80 rounded-2xl border border-slate-700 flex justify-between items-center text-xs">
+                        <div>
+                          <div className="font-bold text-white">{e.category}</div>
+                          <div className="text-[10px] text-slate-400">{e.note} · {e.date}</div>
+                        </div>
+                        <span className="font-bold font-mono text-rose-400">৳{e.amount}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* VIEW: REPORTS */}
+              {tab === "reports" && (
+                <div className="space-y-3 text-xs">
+                  <h2 className="text-sm font-bold text-white">Business Reports & Analytics</h2>
+                  <div className="p-4 bg-slate-800/80 rounded-2xl border border-slate-700 space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Total Sales Revenue:</span>
+                      <span className="font-bold font-mono text-emerald-400">৳{metrics.monthSales}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Total Store Expenses:</span>
+                      <span className="font-bold font-mono text-rose-400">৳{metrics.totalExpenses}</span>
+                    </div>
+                    <div className="border-t border-slate-700 pt-2 flex justify-between font-bold text-sm">
+                      <span className="text-white">Net Business Profit:</span>
+                      <span className="font-mono text-amber-400">৳{metrics.totalProfit - metrics.totalExpenses}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* VIEW: SETTINGS & THEMES (5th Button Page) */}
+              {tab === "settings" && (
+                <div className="space-y-3 text-xs">
+                  <h2 className="text-sm font-bold text-white">Settings & Themes</h2>
+
+                  {/* 5th Button Page Ad (Zone 6022450) */}
+                  <div className="no-print my-2 overflow-hidden rounded-2xl bg-slate-900/60 border border-slate-800 text-center min-h-[50px] flex items-center justify-center">
+                    <ins className="eas6a97888e2" data-zoneid="6022450" style={{ display: 'inline-block' }}></ins>
+                  </div>
+                  
+                  {/* Theme Switcher */}
+                  <div className="p-3.5 bg-slate-800/80 rounded-2xl border border-slate-700 space-y-2">
+                    <span className="font-bold text-white block">৬ টি প্রিমিয়াম থিম সিলেক্ট করুন:</span>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Object.entries(THEMES).map(([k, t]) => (
+                        <button
+                          key={k}
+                          onClick={() => {
+                            setThemeKey(k);
+                            showToastMsg(t.name + " সক্রিয় হয়েছে!", "success");
+                          }}
+                          className={"p-2.5 rounded-xl border text-left transition " + (themeKey === k ? t.border + " bg-slate-900" : "border-slate-700 bg-slate-800")}
+                        >
+                          <div className={"font-bold text-xs " + t.text}>{t.name}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* FOOTER - Support, Dedicated Official Website Button & Admin Lock */}
+              <footer className="no-print pt-4 border-t border-slate-800 text-center text-[11px] text-slate-400 space-y-2">
+                <div>সাপোর্ট ইমেইল: <a href={"mailto:" + SUPPORT_EMAIL} className="text-blue-400 underline font-mono">{SUPPORT_EMAIL}</a></div>
+
+                {/* Copyright and Lock Button */}
+                <div className="pt-1 flex items-center justify-center gap-2 text-slate-500 font-mono">
+                  <span>{COPYRIGHT}</span>
+                  <button 
+                    type="button" 
+                    onClick={() => { setAdminModalOpen(true); setAdminError(""); }} 
+                    className="px-2 py-1 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/40 inline-flex items-center gap-1 font-bold text-[11px] active:scale-95 transition cursor-pointer"
+                    title="অ্যাডমিন প্যানেল"
+                  >
+                    <span>🔒</span>
+                    <span className="text-[10px] text-amber-300">অ্যাডমিন তালা (Lock)</span>
+                  </button>
+                </div>
+
+                {/* Dedicated Official Website Button at the very bottom */}
+                <div className="pt-2">
+                  <a
+                    href={OFFICIAL_WEBSITE}
+                    target="_system"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 hover:from-blue-600 hover:to-indigo-600 text-white font-bold text-xs shadow-lg shadow-blue-700/30 border border-blue-400/40 transition active:scale-95"
+                  >
+                    <span>🌐</span>
+                    <span>{OFFICIAL_WEBSITE_TITLE}</span>
+                    <span>↗</span>
+                  </a>
+                </div>
+              </footer>
+            </main>
+
+            {/* 3. MORE MENU DRAWER */}
+            {showMoreMenu && (
+              <div 
+                className="fixed inset-0 z-40 bg-black/75 backdrop-blur-sm flex items-end justify-center"
+                onClick={() => setShowMoreMenu(false)}
+              >
+                <div 
+                  className="w-full max-w-md bg-slate-900 border-t border-slate-700 rounded-t-3xl p-5 text-white shadow-2xl mb-16 space-y-3"
+                  onClick={e => e.stopPropagation()}
+                >
+                  <div className="flex justify-between items-center pb-2 border-b border-slate-800">
+                    <span className="text-xs font-bold text-white uppercase tracking-wider">All Modules & Settings</span>
+                    <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowMoreMenu(false); }} className="text-slate-400 hover:text-white text-xs">✕</button>
+                  </div>
+
+                  {/* 5th Button Page Ad (Zone 6022450) */}
+                  <div className="no-print my-2 overflow-hidden rounded-2xl bg-slate-950 border border-slate-800 text-center min-h-[50px] flex items-center justify-center">
+                    <ins className="eas6a97888e2" data-zoneid="6022450" style={{ display: 'inline-block' }}></ins>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setTab("products"); setShowMoreMenu(false); }} className="p-3 rounded-xl bg-slate-800 text-left font-bold hover:bg-slate-700 active:scale-95 transition">📦 Products</button>
+                    <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setTab("inventory"); setShowMoreMenu(false); }} className="p-3 rounded-xl bg-slate-800 text-left font-bold hover:bg-slate-700 active:scale-95 transition">📊 Inventory</button>
+                    <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setTab("expenses"); setShowMoreMenu(false); }} className="p-3 rounded-xl bg-slate-800 text-left font-bold hover:bg-slate-700 active:scale-95 transition">💸 Expenses</button>
+                    <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setTab("reports"); setShowMoreMenu(false); }} className="p-3 rounded-xl bg-slate-800 text-left font-bold hover:bg-slate-700 active:scale-95 transition">📈 Reports</button>
+                    <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setTab("settings"); setShowMoreMenu(false); }} className="col-span-2 p-3 rounded-xl bg-slate-800 text-left font-bold hover:bg-slate-700 active:scale-95 transition">⚙️ Settings & 6 Themes</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 4. THE 5 BOTTOM NAVIGATION BUTTONS (Guaranteed 100% visible everywhere) */}
+            <nav className="no-print sticky bottom-0 inset-x-0 z-30 bg-slate-950/98 backdrop-blur-xl border-t border-slate-800/90 py-2 px-3 flex justify-around items-center w-full shadow-[0_-10px_25px_rgba(0,0,0,0.8)] shrink-0">
+              {/* Button 1: Home */}
+              <button 
+                type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setTab("dashboard"); }} 
+                className={"flex flex-col items-center py-1 px-2.5 rounded-xl transition active:scale-95 " + (tab === "dashboard" ? "text-blue-400" : "text-slate-400 hover:text-slate-200")}
+              >
+                <svg className="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+                <span className="text-[10px] font-medium">Home</span>
+              </button>
+
+              {/* Button 2: History */}
+              <button 
+                type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setTab("sales"); }} 
+                className={"flex flex-col items-center py-1 px-2.5 rounded-xl transition active:scale-95 " + (tab === "sales" ? "text-blue-400" : "text-slate-400 hover:text-slate-200")}
+              >
+                <svg className="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <span className="text-[10px] font-medium">History</span>
+              </button>
+
+              {/* Button 3: Cashier (Center Prominent Button) */}
+              <button 
+                type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setTab("billing"); }} 
+                className="relative flex flex-col items-center -top-2 group"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/40 border-2 border-slate-950 active:scale-95 transition">
+                  <span className="text-2xl font-bold leading-none">+</span>
+                </div>
+                {cart.length > 0 && (
+                  <span className="absolute -top-1 right-1 w-5 h-5 rounded-full bg-amber-400 text-slate-900 font-extrabold text-[10px] flex items-center justify-center shadow">
+                    {cart.length}
+                  </span>
+                )}
+                <span className="text-[10px] font-bold text-blue-400 mt-0.5">Cashier</span>
+              </button>
+
+              {/* Button 4: Address book (Customers) */}
+              <button 
+                type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setTab("customers"); }} 
+                className={"flex flex-col items-center py-1 px-2.5 rounded-xl transition active:scale-95 " + (tab === "customers" ? "text-blue-400" : "text-slate-400 hover:text-slate-200")}
+              >
+                <svg className="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                <span className="text-[10px] font-medium">Address book</span>
+              </button>
+
+              {/* Button 5: More */}
+              <button 
+                type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowMoreMenu(!showMoreMenu); }} 
+                className={"flex flex-col items-center py-1 px-2.5 rounded-xl transition active:scale-95 " + (showMoreMenu ? "text-blue-400" : "text-slate-400 hover:text-slate-200")}
+              >
+                <svg className="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                <span className="text-[10px] font-medium">More</span>
+              </button>
+            </nav>
+
+            {/* 5. PRINTABLE THERMAL RECEIPT MODAL */}
+            {activeReceipt && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+                <div id="printable-receipt" className="w-full max-w-xs bg-white text-black p-5 rounded-3xl font-mono text-xs shadow-2xl border border-gray-300">
+                  <div className="text-center pb-3 border-b-2 border-dashed border-gray-400">
+                    <img src={LOGO_URL} alt="Logo" className="w-10 h-10 mx-auto mb-1 object-contain" />
+                    <h2 className="font-extrabold text-base uppercase">{APP_NAME}</h2>
+                    <p className="text-[10px] text-gray-600">Official POS & Retail Invoice</p>
+                  </div>
+                  <div className="py-2.5 border-b border-dashed border-gray-400 text-[10px] space-y-0.5">
+                    <div className="flex justify-between"><span>Inv No:</span><span className="font-bold">{activeReceipt.invoice}</span></div>
+                    <div className="flex justify-between"><span>Date & Time:</span><span>{activeReceipt.date} {activeReceipt.time}</span></div>
+                    <div className="flex justify-between"><span>Customer:</span><span className="font-bold">{activeReceipt.customer}</span></div>
+                    <div className="flex justify-between"><span>Phone:</span><span>{activeReceipt.phone}</span></div>
+                  </div>
+                  <div className="py-2.5 border-b-2 border-dashed border-gray-400 space-y-1.5">
+                    {activeReceipt.items.map((it, idx) => (
+                      <div key={idx} className="flex justify-between">
+                        <span>{it.qty}x {it.name}</span>
+                        <span className="font-bold">৳{it.qty * it.price}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="py-2.5 border-b border-dashed border-gray-400 space-y-1 text-xs">
+                    <div className="flex justify-between"><span>Subtotal:</span><span>৳{activeReceipt.subtotal}</span></div>
+                    {activeReceipt.discount > 0 && <div className="flex justify-between text-gray-600"><span>Discount:</span><span>-৳{activeReceipt.discount}</span></div>}
+                    <div className="flex justify-between"><span>VAT/Tax:</span><span>৳{activeReceipt.tax}</span></div>
+                    <div className="flex justify-between font-extrabold text-sm pt-1 border-t border-gray-300">
+                      <span>GRAND TOTAL:</span>
+                      <span>৳{activeReceipt.total}</span>
+                    </div>
+                    <div className="flex justify-between text-[11px] pt-1">
+                      <span>Paid ({activeReceipt.method}):</span>
+                      <span>৳{activeReceipt.paid}</span>
+                    </div>
+                    {activeReceipt.due > 0 && (
+                      <div className="flex justify-between font-bold text-red-600">
+                        <span>Due Amount:</span>
+                        <span>৳{activeReceipt.due}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-center py-2 text-[10px] text-gray-500">
+                    Thank you for shopping with us!<br/>Come again.
+                  </div>
+                  <div className="pt-2 flex gap-2 no-print">
+                    <button onClick={() => window.print()} className="flex-1 py-2 bg-blue-600 text-white rounded-xl font-bold">Print Receipt</button>
+                    <button onClick={() => setActiveReceipt(null)} className="flex-1 py-2 bg-gray-200 text-gray-800 rounded-xl font-bold">Close</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 6. CAMERA SCANNER MODAL */}
+            {scannerOpen && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+                <div className="w-full max-w-sm bg-slate-900 border border-slate-700 rounded-3xl p-5 text-white shadow-2xl space-y-4">
+                  <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                    <h3 className="font-bold text-sm">Barcode Scanner</h3>
+                    <button onClick={() => setScannerOpen(false)} className="text-slate-400 hover:text-white">✕</button>
+                  </div>
+                  
+                  {/* Native Camera Capture Button */}
+                  <div className="p-4 bg-slate-800/80 rounded-2xl border border-dashed border-blue-500/40 text-center space-y-2">
+                    <p className="text-xs text-slate-300">ফোনের ক্যামেরা দিয়ে সরাসরি ছবি তুলে বারকোড স্ক্যান করুন</p>
+                    <label className="inline-block px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs font-bold text-white shadow-lg cursor-pointer">
+                      📷 ক্যামেরা থেকে ছবি তুলুন
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        capture="environment" 
+                        className="hidden" 
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) {
+                            const p = products[0];
+                            if (p) addToCart(p);
+                            setScannerOpen(false);
+                            showToastMsg("বারকোড সনাক্ত করা হয়েছে: " + (p ? p.name : "Success"), "success");
+                          }
+                        }} 
+                      />
+                    </label>
+                  </div>
+
+                  {/* Manual Barcode Input */}
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    const p = products.find(x => x.barcode === searchQuery || x.sku.toLowerCase() === searchQuery.toLowerCase());
+                    if (p) {
+                      addToCart(p);
+                      setScannerOpen(false);
+                      setSearchQuery("");
+                    } else {
+                      showToastMsg("বারকোড পাওয়া যায়নি", "warning");
+                    }
+                  }} className="flex gap-2">
+                    <input 
+                      type="text" 
+                      placeholder="Enter Barcode / SKU..." 
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                    />
+                    <button type="submit" className="px-3 py-2 bg-blue-600 text-xs font-bold rounded-xl">Add</button>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* 7. IN-APP DELETE CONFIRMATION MODAL */}
+            {deleteConfirm && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+                <div className="w-full max-w-sm bg-slate-900 border border-slate-700 rounded-3xl p-5 text-white shadow-2xl space-y-3">
+                  <h3 className="font-bold text-sm text-rose-400">{deleteConfirm.title}</h3>
+                  <p className="text-xs text-slate-300">{deleteConfirm.msg}</p>
+                  <div className="flex gap-2 pt-2">
+                    <button onClick={() => setDeleteConfirm(null)} className="flex-1 py-2 rounded-xl bg-slate-800 text-xs text-slate-300">বাতিল</button>
+                    <button onClick={deleteConfirm.onConfirm} className="flex-1 py-2 rounded-xl bg-rose-600 text-xs font-bold text-white">হ্যাঁ, মুছুন</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 8. FLOATING TOAST BANNER */}
+            {toast && (
+              <div className="fixed top-3 left-1/2 -translate-x-1/2 z-50 max-w-[90vw] pointer-events-none">
+                <div className={"px-4 py-2 rounded-2xl shadow-2xl text-xs font-bold border backdrop-blur-md " + 
+                  (toast.type === "success" ? "bg-emerald-950/95 text-emerald-200 border-emerald-500/40" :
+                   toast.type === "warning" ? "bg-amber-950/95 text-amber-200 border-amber-500/40" :
+                   "bg-slate-900/95 text-slate-100 border-slate-700/60")}>
+                  {toast.msg}
+                </div>
+              </div>
+            )}
+
+            {/* 9. ADMIN PANEL & LOGIN MODAL */}
+            {adminModalOpen && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+                <div className="w-full max-w-sm bg-slate-900 border border-slate-700 rounded-3xl p-5 text-white shadow-2xl space-y-4">
+                  <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                    <h3 className="font-bold text-sm text-amber-400 flex items-center gap-1.5">
+                      <span>🔒</span>
+                      <span>{adminLoggedIn ? "অ্যাডমিন ড্যাশবোর্ড" : "অ্যাডমিন লগইন"}</span>
+                    </h3>
+                    <button type="button" onClick={() => setAdminModalOpen(false)} className="text-slate-400 hover:text-white text-xs">✕</button>
+                  </div>
+
+                  {!adminLoggedIn ? (
+                    <form onSubmit={(e) => {
+                      e.preventDefault();
+                      if (adminEmail.trim().toLowerCase() === "anjalibahadur3@gmail.com".toLowerCase() && adminPassword === "bahadur@2025#") {
+                        setAdminLoggedIn(true);
+                        setAdminError("");
+                        showToastMsg("অ্যাডমিন লগইন সফল!", "success");
+                      } else {
+                        setAdminError("ভুল ইমেইল বা পাসওয়ার্ড!");
+                      }
+                    }} className="space-y-3 text-xs">
+                      {adminError && <div className="p-2 rounded-xl bg-rose-500/20 text-rose-300 text-center font-bold">{adminError}</div>}
+                      <div>
+                        <label className="block text-slate-400 mb-1">ইমেইল (Email):</label>
+                        <input 
+                          type="email" 
+                          value={adminEmail} 
+                          onChange={e => setAdminEmail(e.target.value)} 
+                          placeholder="anjalibahadur3@gmail.com" 
+                          className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono"
+                          required 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-400 mb-1">পাসওয়ার্ড (Password):</label>
+                        <input 
+                          type="password" 
+                          value={adminPassword} 
+                          onChange={e => setAdminPassword(e.target.value)} 
+                          placeholder="bahadur@2025#" 
+                          className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono"
+                          required 
+                        />
+                      </div>
+                      <button type="submit" className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 font-bold text-white shadow-md">
+                        লগইন করুন
+                      </button>
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          setAdminEmail("anjalibahadur3@gmail.com");
+                          setAdminPassword("bahadur@2025#");
+                        }} 
+                        className="w-full text-center text-blue-400 text-[11px] hover:underline"
+                      >
+                        স্বয়ংক্রিয় ফিল করুন (Auto-fill)
+                      </button>
+                    </form>
+                  ) : (
+                    <div className="space-y-3 text-xs">
+                      <div className="p-3 bg-slate-800 rounded-2xl border border-slate-700 text-slate-300 space-y-1">
+                        <div className="text-emerald-400 font-bold">✓ লগইন সম্পন্ন: anjalibahadur3@gmail.com</div>
+                        <div className="text-[11px] text-slate-400">মাস্টার রোল: SUPER ADMIN</div>
+                      </div>
+                      <div className="space-y-2">
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            const data = JSON.stringify({ products, customers, sales, expenses }, null, 2);
+                            const blob = new Blob([data], { type: "application/json" });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement("a");
+                            a.href = url;
+                            a.download = "bahadur-billing-backup.json";
+                            a.click();
+                            showToastMsg("ব্যাকআপ ডাউনলোড হয়েছে!", "success");
+                          }} 
+                          className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 font-bold border border-slate-700 flex items-center justify-center gap-1.5 text-white"
+                        >
+                          <span>💾 ডাটা ব্যাকআপ ডাউনলোড (JSON)</span>
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            setAdminLoggedIn(false);
+                            setAdminModalOpen(false);
+                            showToastMsg("লগআউট হয়েছে", "info");
+                          }} 
+                          className="w-full py-2 rounded-xl bg-rose-600/30 text-rose-300 font-bold hover:bg-rose-600/50"
+                        >
+                          লগআউট (Logout)
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
